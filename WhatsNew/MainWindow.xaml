@@ -1,35 +1,96 @@
 ﻿<Window x:Class="WhatsNew.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="clr-namespace:System;assembly=mscorlib"
         xmlns:self="clr-namespace:WhatsNew"
-        xmlns:tmdb="clr-namespace:TMDbLib.Objects.TvShows;assembly=TMDbLib"
-        Title="MainWindow" Height="450" Width="650">
+        xmlns:tvShows="clr-namespace:TMDbLib.Objects.TvShows;assembly=TMDbLib"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d"
+        Title="MainWindow" Height="458" Width="708" Closing="Window_Closing" ResizeMode="NoResize">
     <Grid>
-        <Button x:Name="button" Content="Add Show" Margin="10,10,432,388" Click="Button_Click" />
-        <ListBox x:Name="showList" HorizontalAlignment="Left" Margin="10,37,0,10" Width="200">
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <Grid Margin="0,2">
-                        <Label Content="{Binding Title}" />
+        <StackPanel x:Name="SeriesListPanel" Margin="0,0,472,0">
+            <Button x:Name="AddButton" Content="Add Series" HorizontalAlignment="Left" Height="22" Margin="10,10,10,0" VerticalAlignment="Top" Width="200" Click="AddButtonClick"/>
+            <ListBox x:Name="SeriesList" HorizontalAlignment="Left" Margin="10,10,10,10" Width="200" SelectionChanged="ShowList_SelectionChanged" Height="368" >
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="{x:Type self:Series}">
+                        <StackPanel Orientation="Horizontal">
+                            <Image x:Name="Icon" Source="{Binding Source}" Stretch="Fill" Width="16" Height="16" />
+                            <Label Content="{Binding Name}" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </StackPanel >
+        <Grid x:Name="ResultsListPanel" Margin="0,0,472,0" Visibility="Hidden">
+            <TextBox x:Name="SearchTextBox" Margin="10,10,50,385" />
+            <Button x:Name="SearchButton" Margin="175,10,10,385" Content="Go" Click="SearchButtonClick" IsDefault="True" />
+            <ListBox x:Name="ResultsList" HorizontalAlignment="Left" Margin="10,40,10,10" Width="200" SelectionChanged="ResultsList_SelectionChanged" Height="339" VerticalAlignment="Top">
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="{x:Type tvShows:TvShowBase}">
+                        <Label Content="{Binding Name}" />
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <Button Content="Back" HorizontalAlignment="Left" Margin="117,384,0,0" VerticalAlignment="Top" Width="93" Height="26" Click="BackButtonClick"/>
+            <Button x:Name="AddSeriesButton" Content="Add" HorizontalAlignment="Left" Margin="10,384,0,0" VerticalAlignment="Top" Width="102" Height="26" IsEnabled="False" Click="AddSeriesButton_Click"/>
+        </Grid>
+
+        <Grid Margin="220,10,10,10" >
+            <TabControl HorizontalAlignment="Left" Height="400" VerticalAlignment="Top" Width="462">
+                <TabItem Header="Whats New">
+                    <Grid>
+                        <ListBox x:Name="NewEpisodeList" HorizontalAlignment="Left" Height="365" Margin="0,0,0,0" VerticalAlignment="Bottom" Width="452">
+
+                        </ListBox>
                     </Grid>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
-        <TreeView x:Name="seriesTree" Margin="220,10,10,10">
-            <TreeView.Resources>
-                <HierarchicalDataTemplate DataType="{x:Type self:Series}" ItemsSource="{Binding seasons}">
-                    <TextBlock Text="{Binding Name}" />
-                </HierarchicalDataTemplate>
-                <HierarchicalDataTemplate DataType="{x:Type self:Season}" ItemsSource="{Binding episodes}">
-                    <TextBlock Text="{Binding SeasonNumber}" />
-                </HierarchicalDataTemplate>
-                <DataTemplate DataType="{x:Type self:Episode}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding Name}" />
-                    </StackPanel>
-                    
-                </DataTemplate>
-            </TreeView.Resources>
-        </TreeView>
+                </TabItem>
+                <TabItem Header="Episodes" Height="23" VerticalAlignment="Bottom">
+                    <Grid Background="#FFE5E5E5">
+                        <TreeView x:Name="SeriesTree" ItemsSource="{Binding}" PreviewMouseRightButtonDown="SeriesTree_PreviewMouseRightButtonDown" SelectedItemChanged="SeriesTree_SelectedItemChanged">
+                            <TreeView.Resources>
+                                <HierarchicalDataTemplate DataType="{x:Type self:Series}" ItemsSource="{Binding Seasons}">
+                                    <TextBlock Text="{Binding Name}" />
+                                </HierarchicalDataTemplate>
+                                <HierarchicalDataTemplate DataType="{x:Type self:Season}" ItemsSource="{Binding Episodes}">
+                                    <TextBlock Text="{Binding SeasonNumber}" />
+                                </HierarchicalDataTemplate>
+                                <HierarchicalDataTemplate DataType="{x:Type self:Episode}" ItemsSource="{Binding Info}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
+                                        <CheckBox IsChecked="{Binding Watched, Mode=TwoWay}" Checked="CheckBox_Checked" Unchecked="CheckBox_Checked">
+                                            <CheckBox.Content>
+                                                <MultiBinding StringFormat="{}{0} {1}" Converter="{StaticResource searchFilterConverter}">
+                                                    <Binding Path="EpisodeNumber"/>
+                                                    <Binding Path="Name"/>
+                                                </MultiBinding>
+                                                
+                                            </CheckBox.Content>
+                                        </CheckBox>
+                                    </StackPanel>
+                                </HierarchicalDataTemplate>
+                                <Style TargetType="TreeViewItem">
+                                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                </Style>
+                                <DataTemplate DataType="{x:Type s:String}">
+                                    <StackPanel Orientation="Vertical" MinWidth="0" MaxWidth="350">
+                                        <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </DataTemplate>
+                                <ContextMenu x:Key="SeriesContext" StaysOpen="true">
+                                    <MenuItem Header="Mark Series Watched" Click="MarkItemWatched" />
+                                </ContextMenu>
+                                <ContextMenu x:Key="SeasonContext">
+                                    <MenuItem Header="Mark Season Watched" Click="MarkItemWatched" />
+                                </ContextMenu>
+                                <ContextMenu x:Key="EpisodeContext">
+                                    <MenuItem Header="Mark Episode Watched" Click="MarkItemWatched" />
+                                </ContextMenu>
+                            </TreeView.Resources>
+                        </TreeView>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+
+        </Grid>
+
     </Grid>
 </Window>

@@ -1,28 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 using TMDbLib.Client;
-using TMDbLib.Objects.TvShows;
 
 namespace WhatsNew
 {
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App : Application
+    public partial class App
     {
-        private readonly static string apiKey = "b861bd20b4d5e1044703f7fb0b64f0b7";
-        public static TMDbClient client;
+        private const string ApiKey = "b861bd20b4d5e1044703f7fb0b64f0b7";
+        public static TMDbClient Client;
 
         void App_Startup(object sender, StartupEventArgs e)
         {
-            client = new TMDbClient(apiKey);
+            Client = new TMDbClient(ApiKey);
 
-            MainWindow window = new MainWindow();
+            var window = new MainWindow();
             window.Show();
         }
 
