@@ -2,26 +2,22 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Net.Cache;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using TMDbLib.Objects.TvShows;
 using System.Collections.ObjectModel;
+using Newtonsoft.Json.Linq;
+using RestSharp.Contrib;
 
 namespace WhatsNew
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow
     {
         private static MainWindow _main;
 
-        private ObservableCollection<Series> seriesList = new ObservableCollection<Series>();
+        private readonly ObservableCollection<Series> seriesList = new ObservableCollection<Series>();
 
         public MainWindow()
         {
@@ -51,6 +47,7 @@ namespace WhatsNew
                     SeriesTree.ItemsSource = new List<Series> {seriesList[0]};
                 }
                 SeriesList.ItemsSource = seriesList;
+                
                 FindNewEpisodes();
             }));
 
@@ -104,8 +101,16 @@ namespace WhatsNew
 
         private void SearchButtonClick(object sender, RoutedEventArgs e)
         {
-            var results = App.Client.SearchTvShow(SearchTextBox.Text).Results;
-            ResultsList.ItemsSource = results;
+            var escapedSearch = HttpUtility.UrlEncode(SearchTextBox.Text);
+
+            var results = RequestHandler.MakeCall("search/tv", escapedSearch);
+            var jResults = results["results"].ToArray();
+            ResultsList.Items.Clear();
+            foreach (var jResult in jResults)
+            {
+                ResultsList.Items.Add(new Series(JObject.Parse(jResult.ToString())));
+            }
+            
         }
 
         private void ResultsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -115,10 +120,10 @@ namespace WhatsNew
 
         private void AddSeriesButton_Click(object sender, RoutedEventArgs e)
         {
-            var temp = ResultsList.SelectedItem as TvShowBase;
+            var temp = ResultsList.SelectedItem as Series;
 
             if (temp == null) return;
-            seriesList.Add(SaveHandler.ReadFromId(null, temp.Id));
+            seriesList.Add(SaveHandler.ReadFromJson(null, temp.Id));
             SeriesList.ItemsSource = null;
             SeriesList.ItemsSource = seriesList;
         }
@@ -186,149 +191,18 @@ namespace WhatsNew
     interface ISeriesListItem
     {
         void MarkWatched();
-
     }
 
-    public class Series : ISeriesListItem
+    public class SearchFilterConverter : IMultiValueConverter
     {
-        public readonly TvShow Show;
-        public ObservableCollection<Season> Seasons { get; set; }
-
-        private static BitmapImage _orangeBullet, _whiteBullet;
-
-        
-        public Series(TvShow show)
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
-            Show = show;
-            Seasons = new ObservableCollection<Season>();
-            Name = show.Name;
-            Id = show.Id;
-
-            UpdateIcon();
+            return ((int)values[0] + " " + (String)values[1]);
         }
-
-        public Series(string name)
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         {
-            Name = name;
+            throw new NotImplementedException();
         }
-
-        private bool Watched()
-        {
-            foreach (var s in Seasons)
-            {
-                if (s.SeasonNumber == 0) continue;
-                foreach (var e in s.Episodes)
-                {
-                    if (!e.Watched) return false;
-                }
-            }
-            return true;
-        }
-
-        public void UpdateIcon()
-        {
-
-            Application.Current.Dispatcher.Invoke( delegate
-            {
-                if (_orangeBullet == null) _orangeBullet = InitImage("../../res/bullet_orange.png");
-                if (_whiteBullet == null) _whiteBullet = InitImage("../../res/bullet_white.png");
-
-                var t = Watched();
-                Source = (t ? _whiteBullet : _orangeBullet);
-            });
-            MainWindow.ReloadList();
-        }
-
-        private static BitmapImage InitImage( string path )
-        {
-            var image = new BitmapImage();
-            image.BeginInit();
-            image.CacheOption = BitmapCacheOption.None;
-            image.UriCachePolicy = new RequestCachePolicy(RequestCacheLevel.BypassCache);
-            image.CacheOption = BitmapCacheOption.OnLoad;
-            image.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-            image.UriSource = new Uri(path, UriKind.Relative);
-            image.EndInit();
-
-            return image;
-        }
-
-        public void MarkWatched()
-        {
-            foreach (var s in Seasons)
-                s.MarkWatched();
-        }
-
-        public string Name { get; set; }
-        public int Id { get; private set; }
-        public ImageSource Source { get; set; }
-        public Boolean IsSelected  { get; set; }
-        public Boolean IsExpanded { get; set; }
-    }
-
-    public class Season : ISeriesListItem
-    {
-        public readonly TvSeason SeasonData;
-        public ObservableCollection<Episode> Episodes { get; set; }
-
-        public Season(TvSeason season)
-        {
-            SeasonData = season;
-            Episodes = new ObservableCollection<Episode>();
-            SeasonNumber = season.SeasonNumber;
-        }
-
-        public void MarkWatched()
-        {
-            foreach (var e in Episodes)
-                e.MarkWatched();
-        }
-
-        public int SeasonNumber { get; set; }
-        public Boolean IsSelected { get; set; }
-        public Boolean IsExpanded { get; set; }
-    }
-
-    public class Episode : ISeriesListItem
-    {
-        public TvEpisode EpisodeData;
-
-        public ObservableCollection<string> Info { get; set; }
-        public DateTime AirDate { get; set; }
-        public int EpisodeNumber { get; set; }
-
-        public Episode(TvEpisode episodeData)
-        {
-            EpisodeData = episodeData;
-            Info = new ObservableCollection<string> {episodeData.Overview};
-            AirDate = episodeData.AirDate;
-            Name = episodeData.Name;
-            EpisodeNumber = episodeData.EpisodeNumber;
-            if (episodeData.Id != null) Id = (int)episodeData.Id;
-            Watched = false;
-        }
-
-        public void MarkWatched()
-        {
-            Watched = true;
-        }
-
-        public string Name { get; set; }
-        public int Id { get; set; }
-        public bool Watched { get; set; }
-        public Boolean IsSelected { get; set; }
-        public Boolean IsExpanded { get; set; }
     }
 }
 
-public class SearchFilterConverter : IMultiValueConverter
-{
-    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
-    {
-        return ((int)values[0] + " " + (String)values[1]); ;
-    }
-    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
-    {
-        throw new NotImplementedException();
-    }
-}

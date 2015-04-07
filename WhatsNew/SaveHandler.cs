@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,14 +30,14 @@ namespace WhatsNew
                 var stream = new StreamReader(file);
                 if (fileName == null) continue;
                 var id = int.Parse(fileName);
-                shows.Add(ReadFromId(stream, id));
+                shows.Add(ReadFromJson(stream, id));
                 stream.Close();
             }
 
             return shows;
         }
 
-        public static Series ReadFromId(StreamReader stream, int id)
+        public static Series ReadFromJson(StreamReader stream, int id)
         {
             var watched = new List<int>();
             while (stream != null && !stream.EndOfStream)
@@ -46,30 +47,29 @@ namespace WhatsNew
                 watched.Add(int.Parse(watchedId));
             }
 
-            var show = new Series(App.Client.GetTvShow(id));
+            var jSeries = RequestHandler.MakeCall("tv/" + id);
 
-            foreach (var tse in show.Show.Seasons)
+            var show = new Series(jSeries);
+
+            foreach(var season in show.Seasons)
             {
-                var se = new Season(tse);
-                tse.Episodes = App.Client.GetTvSeason(show.Show.Id, tse.SeasonNumber).Episodes;
-                foreach (var te in tse.Episodes)
+                foreach (var episode in season.Episodes)
                 {
-                    var episode = new Episode(te);
                     episode.Watched = watched.Contains(episode.Id);
-                    se.Episodes.Add(episode);
                 }
-                show.Seasons.Add(se);
             }
 
             show.UpdateIcon();
+
             return show;
+
         }
 
         public static void SaveShows(IEnumerable<Series> shows)
         {
             foreach(var show in shows)
             {
-                var file = show.Id.ToString();
+                var file = show.Id.ToString(CultureInfo.InvariantCulture);
 
                 var writer = new StreamWriter(SeriesDirectory + file);
 

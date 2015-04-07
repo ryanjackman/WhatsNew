@@ -3,7 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:s="clr-namespace:System;assembly=mscorlib"
         xmlns:self="clr-namespace:WhatsNew"
-        xmlns:tvShows="clr-namespace:TMDbLib.Objects.TvShows;assembly=TMDbLib"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d"
         Title="MainWindow" Height="458" Width="708" Closing="Window_Closing" ResizeMode="NoResize">
@@ -26,7 +25,7 @@
             <Button x:Name="SearchButton" Margin="175,10,10,385" Content="Go" Click="SearchButtonClick" IsDefault="True" />
             <ListBox x:Name="ResultsList" HorizontalAlignment="Left" Margin="10,40,10,10" Width="200" SelectionChanged="ResultsList_SelectionChanged" Height="339" VerticalAlignment="Top">
                 <ListBox.ItemTemplate>
-                    <DataTemplate DataType="{x:Type tvShows:TvShowBase}">
+                    <DataTemplate DataType="{x:Type self:Series}">
                         <Label Content="{Binding Name}" />
                     </DataTemplate>
                 </ListBox.ItemTemplate>
@@ -58,7 +57,7 @@
                                     <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
                                         <CheckBox IsChecked="{Binding Watched, Mode=TwoWay}" Checked="CheckBox_Checked" Unchecked="CheckBox_Checked">
                                             <CheckBox.Content>
-                                                <MultiBinding StringFormat="{}{0} {1}" Converter="{StaticResource searchFilterConverter}">
+                                                <MultiBinding StringFormat="{}{0} {1}" Converter="{StaticResource SearchFilterConverter}">
                                                     <Binding Path="EpisodeNumber"/>
                                                     <Binding Path="Name"/>
                                                 </MultiBinding>

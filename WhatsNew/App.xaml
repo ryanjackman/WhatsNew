@@ -1,9 +1,9 @@
 ﻿<Application x:Class="WhatsNew.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:global="clr-namespace:"
+             xmlns:self="clr-namespace:WhatsNew"
              Startup="App_Startup">
     <Application.Resources>
-        <global:SearchFilterConverter x:Key="searchFilterConverter" />
+        <self:SearchFilterConverter x:Key="SearchFilterConverter" />
     </Application.Resources>
 </Application>
