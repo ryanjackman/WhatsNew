@@ -30,7 +30,11 @@ namespace WhatsNew
                 var stream = new StreamReader(file);
                 if (fileName == null) continue;
                 var id = int.Parse(fileName);
-                shows.Add(ReadFromJson(stream, id));
+                var s = ReadFromJson(stream, id);
+                if (s != null)
+                {
+                    shows.Add(s);
+                }  
                 stream.Close();
             }
 
@@ -48,6 +52,7 @@ namespace WhatsNew
             }
 
             var jSeries = RequestHandler.MakeCall("tv/" + id);
+            if (jSeries == null) return null;
 
             var show = new Series(jSeries);
 

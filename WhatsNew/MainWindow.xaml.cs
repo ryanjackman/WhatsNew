@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using System.Windows.Threading;
 using System.Collections.ObjectModel;
 using Newtonsoft.Json.Linq;
 using RestSharp.Contrib;
@@ -15,42 +15,53 @@ namespace WhatsNew
 {
     public partial class MainWindow
     {
-        private static MainWindow _main;
 
         private readonly ObservableCollection<Series> seriesList = new ObservableCollection<Series>();
+        private readonly List<Series> _loadedSeries = new List<Series>(); 
 
         public MainWindow()
         {
             InitializeComponent();
-            if (_main == null) _main = this;
             BuildTree();
         }
 
         private void BuildTree()
         {
             SeriesTree.ItemsSource = null;
-            var loading = new Series("Loading...");
-            seriesList.Add(loading);
+            seriesList.Add(new Series("Loading..."));
             SeriesTree.ItemsSource = seriesList;
             DataContext = seriesList;
 
-            Dispatcher.Invoke(DispatcherPriority.Background, new Action(() =>
+            var worker = new BackgroundWorker();
+            worker.DoWork += LoadSeries;
+            worker.RunWorkerCompleted += LoadComplete;
+            worker.RunWorkerAsync();
+        }
+
+        private void LoadSeries(object sender, DoWorkEventArgs e)
+        {
+            foreach (var s in SaveHandler.ReadShows())
             {
-                foreach (var s in SaveHandler.ReadShows())
-                {
-                    seriesList.Add(s);
-                }
-                seriesList.Remove(loading);
+                _loadedSeries.Add(s);
+            }
+        }
 
-                if (seriesList.Count > 0)
-                {
-                    SeriesTree.ItemsSource = new List<Series> {seriesList[0]};
-                }
-                SeriesList.ItemsSource = seriesList;
-                
-                FindNewEpisodes();
-            }));
+        private void LoadComplete(object sender, RunWorkerCompletedEventArgs e)
+        {
+            seriesList.Clear();
+            foreach (var s in _loadedSeries)
+            {
+                seriesList.Add(s);
+            }
 
+            if (seriesList.Count > 0)
+            {
+                SeriesTree.ItemsSource = new List<Series> { seriesList[0] };
+            }
+            SeriesList.ItemsSource = seriesList;
+
+            FindNewEpisodes();
+            SeriesList.Items.Refresh();
         }
 
         private void FindNewEpisodes()
@@ -81,9 +92,10 @@ namespace WhatsNew
                 s.UpdateIcon();
             }
             FindNewEpisodes();
+            SeriesList.Items.Refresh();
         }
 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void Window_Closing(object sender, CancelEventArgs e)
         {
             SaveHandler.SaveShows(seriesList);
         }
@@ -145,6 +157,7 @@ namespace WhatsNew
             {
                 s.UpdateIcon();
             }
+            SeriesList.Items.Refresh();
         }
 
         private void SeriesTree_PreviewMouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -180,11 +193,6 @@ namespace WhatsNew
                     SeriesTree.ContextMenu = SeriesTree.Resources["EpisodeContext"] as ContextMenu;
                     break;
             }
-        }
-
-        public static void ReloadList()
-        {
-            _main.SeriesList.Items.Refresh();
         }
     }
 

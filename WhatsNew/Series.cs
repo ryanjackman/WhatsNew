@@ -17,9 +17,17 @@ namespace WhatsNew
 
         public Series(JObject json)
         {
-            Name = (string) json["name"];
-            Id = (int) json["id"];
-
+            Seasons = new ObservableCollection<Season>();
+            try
+            {
+                Name = (string) json["name"];
+                Id = (int) json["id"];
+            }
+            catch (Exception)
+            {
+                Console.WriteLine(@"no series name and/or id");
+            }
+            
             JToken[] jSeasons;
             try
             {
@@ -31,8 +39,6 @@ namespace WhatsNew
                 return;
             }
             
-
-            Seasons = new ObservableCollection<Season>();
             foreach (var jSeason in jSeasons)
             {
                 Seasons.Add(new Season(Id, jSeason));
@@ -59,7 +65,6 @@ namespace WhatsNew
 
         public void UpdateIcon()
         {
-
             Application.Current.Dispatcher.Invoke( delegate
             {
                 if (_orangeBullet == null) _orangeBullet = InitImage("../../res/bullet_orange.png");
@@ -68,7 +73,6 @@ namespace WhatsNew
                 var t = Watched();
                 Source = (t ? _whiteBullet : _orangeBullet);
             });
-            MainWindow.ReloadList();
         }
 
         private static BitmapImage InitImage( string path )

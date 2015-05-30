@@ -61,7 +61,6 @@
                                                     <Binding Path="EpisodeNumber"/>
                                                     <Binding Path="Name"/>
                                                 </MultiBinding>
-                                                
                                             </CheckBox.Content>
                                         </CheckBox>
                                     </StackPanel>
@@ -88,8 +87,6 @@
                     </Grid>
                 </TabItem>
             </TabControl>
-
         </Grid>
-
     </Grid>
 </Window>
