@@ -14,7 +14,7 @@ namespace WhatsNew
             SeasonNumber = (int) jSeason["season_number"];
 
             Episodes = new ObservableCollection<Episode>();
-            jSeason = RequestHandler.MakeCall(String.Format("tv/{0}/season/{1}", seriesId, SeasonNumber));
+            jSeason = ResourceCache.GetResourceOrUpdate(string.Format("tv/{0}/season/{1}", seriesId, SeasonNumber));
             if (jSeason == null) return;
             var jEpisodes = jSeason["episodes"].ToArray();
 

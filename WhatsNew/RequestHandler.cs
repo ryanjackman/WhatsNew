@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Runtime.Remoting.Metadata.W3cXsd2001;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 
@@ -16,10 +16,10 @@ namespace WhatsNew
 
         private static HttpClient client;
 
-        private static int Reset = 0;
-        private static int Remaining = 30;
+        private static int reset;
+        private static int remaining = 30;
 
-        public static JObject MakeCall(string uri, string query=null)
+        public static JObject MakeCall(string uri, string query=null, int retryAfter=0)
         {
             if (client == null)
             {
@@ -28,39 +28,68 @@ namespace WhatsNew
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             }
 
-            uri += "?api_key=" + ApiKey;
-            uri += (query != null) ? "&query=" + query : "";
+            //string json;
 
-            if (Remaining == 0)
+            var hash = (uri + query).GetHashCode();
+            //if (ResourceCache.TryGetResource(hash, out json))
+            //{
+            //    return JObject.Parse(json);
+            //}
+
+            var requestUri = uri;
+            requestUri += "?api_key=" + ApiKey;
+            requestUri += (query != null) ? "&query=" + query : "";
+
+            if (retryAfter > 0)
             {
-                var unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-                if (unixTimestamp < Reset)
+                Thread.Sleep((retryAfter + 1) * 1000);
+            }
+            if (remaining == 0)
+            {
+                var unixTimestamp = (int)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+                if (unixTimestamp < reset)
                 {
-                    Console.WriteLine(@"Gotta wait {0} seconds", Reset - unixTimestamp);
-                    Thread.Sleep((Reset - unixTimestamp) * 1000);
+                    Console.WriteLine(@"Gotta wait {0}.5 seconds", reset - unixTimestamp);
+                    Thread.Sleep((reset - unixTimestamp) * 1000 + 500);
                 }
             }
 
-            var response = client.GetAsync(uri).Result;
+            var response = client.GetAsync(requestUri).Result;
 
-            if (response.IsSuccessStatusCode)
+            if (!response.IsSuccessStatusCode)
             {
-                IEnumerable<string> values;
-                if (response.Headers.TryGetValues("X-RateLimit-Remaining", out values))
+                // Explicitly handle 429 errors if system time is wrong 
+                if (response.StatusCode == (HttpStatusCode)429)
                 {
-                    Remaining = int.Parse(values.First());
-                }
-                if (response.Headers.TryGetValues("X-RateLimit-Reset", out values))
-                {
-                    Reset = int.Parse(values.First());
+                    IEnumerable<string> retryHeader;
+                    if (response.Headers.TryGetValues("Retry-After", out retryHeader))
+                    {
+                        var retry = int.Parse(retryHeader.First());
+                        Console.WriteLine(@"retrying after {0} seconds", retry);
+                        // ReSharper disable once TailRecursiveCall
+                        return MakeCall(uri, query, retry);
+                    }
                 }
 
-                var json = response.Content.ReadAsStringAsync().Result;
-
-                return JObject.Parse(json);
+                Console.WriteLine(@"Error: " + response.StatusCode);
+                return null;
             }
-            Console.WriteLine(@"Error: " + response.StatusCode);
-            return null;
+
+            IEnumerable<string> values;
+            if (response.Headers.TryGetValues("X-RateLimit-Remaining", out values))
+            {
+                remaining = int.Parse(values.First());
+            }
+            if (response.Headers.TryGetValues("X-RateLimit-Reset", out values))
+            {
+                reset = int.Parse(values.First());
+            }
+
+            var json = response.Content.ReadAsStringAsync().Result;
+
+            ResourceCache.Cache(hash, json);
+
+            return JObject.Parse(json);
         }
     }
 }

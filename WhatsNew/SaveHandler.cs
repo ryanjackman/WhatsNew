@@ -8,14 +8,14 @@ namespace WhatsNew
 {
     static class SaveHandler
     {
-        private const String SeriesDirectory = @"data/";
+        private const string SeriesDirectory = @"data/";
 
         public static IEnumerable<Series> ReadShows()
         {
             var shows = new List<Series>();
             if (!Directory.Exists(SeriesDirectory))
             {
-                Console.WriteLine(@"No such directory");
+                Console.Error.WriteLine(@"No such directory");
                 return shows;
             }
 
@@ -51,7 +51,7 @@ namespace WhatsNew
                 watched.Add(int.Parse(watchedId));
             }
 
-            var jSeries = RequestHandler.MakeCall("tv/" + id);
+            var jSeries = ResourceCache.GetResourceOrUpdate("tv/" + id);
             if (jSeries == null) return null;
 
             var show = new Series(jSeries);

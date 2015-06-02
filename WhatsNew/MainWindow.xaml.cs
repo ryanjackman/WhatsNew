@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
-using System.Collections.ObjectModel;
 using Newtonsoft.Json.Linq;
 using RestSharp.Contrib;
 
@@ -15,9 +16,8 @@ namespace WhatsNew
 {
     public partial class MainWindow
     {
-
+        private readonly List<Series> loadedSeries = new List<Series>();
         private readonly ObservableCollection<Series> seriesList = new ObservableCollection<Series>();
-        private readonly List<Series> _loadedSeries = new List<Series>(); 
 
         public MainWindow()
         {
@@ -42,21 +42,21 @@ namespace WhatsNew
         {
             foreach (var s in SaveHandler.ReadShows())
             {
-                _loadedSeries.Add(s);
+                loadedSeries.Add(s);
             }
         }
 
         private void LoadComplete(object sender, RunWorkerCompletedEventArgs e)
         {
             seriesList.Clear();
-            foreach (var s in _loadedSeries)
+            foreach (var s in loadedSeries)
             {
                 seriesList.Add(s);
             }
 
             if (seriesList.Count > 0)
             {
-                SeriesTree.ItemsSource = new List<Series> { seriesList[0] };
+                SeriesTree.ItemsSource = new List<Series> {seriesList[0]};
             }
             SeriesList.ItemsSource = seriesList;
 
@@ -74,9 +74,10 @@ namespace WhatsNew
                 {
                     if (nextShow) break;
                     if (season.SeasonNumber == 0) continue;
-                    foreach (var e in season.Episodes.Where(e =>  (!e.Watched && e.AirDate.CompareTo(DateTime.Today) < 0)))
+                    foreach (
+                        var e in season.Episodes.Where(e => (!e.Watched && e.AirDate.CompareTo(DateTime.Today) < 0)))
                     {
-                        var line = String.Format("{0} Season {1} - {2}", series.Name, season.SeasonNumber, e.Name);
+                        var line = string.Format("{0} Season {1} - {2}", series.Name, season.SeasonNumber, e.Name);
                         NewEpisodeList.Items.Add(line);
                         nextShow = true;
                         break;
@@ -88,7 +89,8 @@ namespace WhatsNew
 
         private void CheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            foreach(var s in seriesList){
+            foreach (var s in seriesList)
+            {
                 s.UpdateIcon();
             }
             FindNewEpisodes();
@@ -105,6 +107,7 @@ namespace WhatsNew
             var temp = new List<Series> {SeriesList.SelectedItem as Series};
             SeriesTree.ItemsSource = temp;
         }
+
         private void AddButtonClick(object sender, RoutedEventArgs e)
         {
             SeriesListPanel.Visibility = Visibility.Hidden;
@@ -122,7 +125,6 @@ namespace WhatsNew
             {
                 ResultsList.Items.Add(new Series(JObject.Parse(jResult.ToString())));
             }
-            
         }
 
         private void ResultsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -160,7 +162,7 @@ namespace WhatsNew
             SeriesList.Items.Refresh();
         }
 
-        private void SeriesTree_PreviewMouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private void SeriesTree_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             var treeViewItem = VisualUpwardSearch(e.OriginalSource as DependencyObject);
 
@@ -169,7 +171,7 @@ namespace WhatsNew
             e.Handled = true;
         }
 
-        static TreeViewItem VisualUpwardSearch(DependencyObject source)
+        private static TreeViewItem VisualUpwardSearch(DependencyObject source)
         {
             while (source != null && !(source is TreeViewItem))
                 source = VisualTreeHelper.GetParent(source);
@@ -196,7 +198,7 @@ namespace WhatsNew
         }
     }
 
-    interface ISeriesListItem
+    internal interface ISeriesListItem
     {
         void MarkWatched();
     }
@@ -205,12 +207,12 @@ namespace WhatsNew
     {
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
-            return ((int)values[0] + " " + (String)values[1]);
+            return ((int) values[0] + " " + (string) values[1]);
         }
+
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }
     }
 }
-

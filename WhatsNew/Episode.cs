@@ -13,17 +13,14 @@ namespace WhatsNew
             Id = (int) episodeData["id"];
             EpisodeNumber = (int) episodeData["episode_number"];
             Info = new ObservableCollection<string> { (string) episodeData["overview"] };
-            try
+
+            DateTime date;
+            if (DateTime.TryParse((string) episodeData["air_date"], out date))
             {
-                AirDate = DateTime.Parse((string) episodeData["air_date"]);
-            }
-            catch (Exception)
-            {
-                Console.WriteLine(@"No air date");
+                AirDate = date;
             }
 
             Watched = false;
-
         }
 
         public void MarkWatched()

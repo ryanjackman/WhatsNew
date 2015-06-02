@@ -38,12 +38,10 @@
             <TabControl HorizontalAlignment="Left" Height="400" VerticalAlignment="Top" Width="462">
                 <TabItem Header="Whats New">
                     <Grid>
-                        <ListBox x:Name="NewEpisodeList" HorizontalAlignment="Left" Height="365" Margin="0,0,0,0" VerticalAlignment="Bottom" Width="452">
-
-                        </ListBox>
+                        <ListBox x:Name="NewEpisodeList" HorizontalAlignment="Left" Height="365" Margin="0,0,0,0" VerticalAlignment="Bottom" Width="452"/>
                     </Grid>
                 </TabItem>
-                <TabItem Header="Episodes" Height="23" VerticalAlignment="Bottom">
+                <TabItem Header="Episodes" Height="23" VerticalAlignment="Top" Margin="-2,1,-2,-1">
                     <Grid Background="#FFE5E5E5">
                         <TreeView x:Name="SeriesTree" ItemsSource="{Binding}" PreviewMouseRightButtonDown="SeriesTree_PreviewMouseRightButtonDown" SelectedItemChanged="SeriesTree_SelectedItemChanged">
                             <TreeView.Resources>

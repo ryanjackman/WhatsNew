@@ -13,7 +13,7 @@ namespace WhatsNew
     {
         public ObservableCollection<Season> Seasons { get; set; }
 
-        private static BitmapImage _orangeBullet, _whiteBullet;
+        private static BitmapImage orangeBullet, whiteBullet;
 
         public Series(JObject json)
         {
@@ -35,11 +35,10 @@ namespace WhatsNew
             }
             catch (Exception)
             {
-                Console.WriteLine(@"Partial series found");
                 return;
             }
-            
-            foreach (var jSeason in jSeasons)
+
+            foreach(var jSeason in jSeasons)
             {
                 Seasons.Add(new Season(Id, jSeason));
             }
@@ -67,11 +66,11 @@ namespace WhatsNew
         {
             Application.Current.Dispatcher.Invoke( delegate
             {
-                if (_orangeBullet == null) _orangeBullet = InitImage("../../res/bullet_orange.png");
-                if (_whiteBullet == null) _whiteBullet = InitImage("../../res/bullet_white.png");
+                if (orangeBullet == null) orangeBullet = InitImage("../../res/bullet_orange.png");
+                if (whiteBullet == null) whiteBullet = InitImage("../../res/bullet_white.png");
 
                 var t = Watched();
-                Source = (t ? _whiteBullet : _orangeBullet);
+                Source = (t ? whiteBullet : orangeBullet);
             });
         }
 

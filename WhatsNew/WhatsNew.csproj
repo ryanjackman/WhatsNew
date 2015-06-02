@@ -66,6 +66,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="ResourceCache.cs" />
     <Compile Include="RequestHandler.cs" />
     <Compile Include="Episode.cs" />
     <Compile Include="Season.cs" />
